@@ -1,8 +1,8 @@
-python ./lerobot_lsy/src/lerobot/scripts/train.py \
+python ./lerobot_lsy/src/lerobot/scripts/train_real.py \
     --job_name=dit_flow_mt_franka_pretrain \
     --output_dir=./outputs/real/dit_flow_mt_franka_pretrain \
     --dataset.repo_id=continuallearning/pretraining_v2_lerobot30 \
-    --policy.type=dit_flow_mt \
+    --policy.type=ditflow_mt \
     --policy.push_to_hub=false \
     --batch_size=32 \
     --num_workers=16 \
