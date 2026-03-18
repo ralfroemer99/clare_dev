@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(1:*)",
+      "Bash(echo \"exit: $?\")",
+      "Read(//home/ralf_roemer/projects/clare_dev/**)",
+      "Read(//home/ralf_roemer/.cache/huggingface/lerobot/local/stack_cake_v2_delta/videos/**)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f''''Episodes: {d[total_episodes]}, Frames: {d[total_frames]}''''\\)\")",
+      "Read(//home/ralf_roemer/**)",
+      "Bash(ls -la /home/ralf_roemer/projects/clare_dev/action_distributions*.png)",
+      "Bash(ls -la ~/action_distributions*.png)",
+      "Bash(ls /home/ralf_roemer/projects/clare_dev/lerobot_lsy/src/lerobot/scripts/util/draw_success*.py)",
+      "Bash(ls /home/ralf_roemer/projects/clare_dev/*.py)",
+      "Bash(find /home/ralf_roemer/projects/clare_dev -name *.py -newer /home/ralf_roemer/projects/clare_dev/action_distributions.png -not -path */.*)",
+      "Bash(find ~/.cache/huggingface/lerobot/cadene/droid_1.0.1/data -name *.parquet)",
+      "Bash(find ~/.cache/huggingface/lerobot/cadene/droid_1.0.1 -name *.mp4)",
+      "Bash(find ~/.cache/huggingface/lerobot/cadene/droid_1.0.1 -name *.lock)",
+      "Bash(kill 240506 240491 240469)",
+      "Bash(kill 315654 315624 315604)",
+      "Bash(find ~/.cache/huggingface/lerobot/cadene/droid_1.0.1/videos -name *.mp4)",
+      "Bash(xargs kill:*)",
+      "Bash(find ~/.cache/huggingface/lerobot/local/droid_2000_delta -name *.mp4)",
+      "Bash(python3 -c \":*)",
+      "Bash(CACHE=~/.cache/huggingface/lerobot/local/droid_2000_delta ls $CACHE)",
+      "Read(//home/ralf_roemer/projects/clare_dev/$CACHE/**)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f''''Progress file: {len\\(d\\)} episodes done''''\\)\")",
+      "Bash(echo 'No progress file' cat $CACHE/meta/info.json)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f''''Dataset: {d[\"\"total_episodes\"\"]} episodes, {d[\"\"total_frames\"\"]} frames''''\\)\")",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\(''/root/.cache/huggingface/lerobot/local/droid_2000_delta/meta/info.json'' if __import__\\(''os''\\).path.exists\\(''/root/.cache''\\) else ''/home/ralf_roemer/.cache/huggingface/lerobot/local/droid_2000_delta/meta/info.json''\\)\\); print\\(f''Episodes so far: {d[\"\"total_episodes\"\"]}''\\)\")",
+      "Bash(kill -0 1576599)",
+      "Bash(kill -0 1721717)",
+      "Bash(kill -0 3101186)",
+      "Bash(huggingface-cli whoami:*)",
+      "Bash(python -c \":*)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  }
+}

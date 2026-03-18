@@ -183,10 +183,12 @@ def rollout(
         if render_callback is not None:
             render_callback(env)
 
-        # VectorEnv stores is_success in `info["final_info"][env_index]["is_success"]`. "final_info" isn't
-        # available of none of the envs finished.
+        # gymnasium 0.26–0.29: success in final_info[i]["is_success"] (list of dicts)
+        # gymnasium 1.x: success stacked directly as info["is_success"] (numpy array)
         if "final_info" in info:
-            successes = [info["is_success"] if info is not None else False for info in info["final_info"]]
+            successes = [i["is_success"] if i is not None else False for i in info["final_info"]]
+        elif "is_success" in info:
+            successes = info["is_success"].tolist()
         else:
             successes = [False] * env.num_envs
 

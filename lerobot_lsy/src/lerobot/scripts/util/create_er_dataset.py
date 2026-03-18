@@ -118,6 +118,16 @@ def parse_args():
         default=42,
         help="Random seed (default: 42)",
     )
+    parser.add_argument(
+        "--push_to_hub",
+        action="store_true",
+        help="Push the merged dataset to the Hugging Face Hub",
+    )
+    parser.add_argument(
+        "--private",
+        action="store_true",
+        help="Upload as a private dataset (default: public)",
+    )
     return parser.parse_args()
 
 if __name__ == "__main__":
@@ -134,5 +144,8 @@ if __name__ == "__main__":
         merged_repo_id=args.merged_repo_id,
         seed=args.seed,
     )
+
+    if args.push_to_hub:
+        merged_dataset.push_to_hub(private=args.private)
 
     print(merged_dataset)

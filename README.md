@@ -150,7 +150,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare.py \
     --env.task=Libero_10_Task_0 \
     --eval.batch_size=20 \
     --eval.n_episodes=100 \
-    --eval.max_episodes_rendered=100 \
+    --eval.max_episodes_rendered=4 \
     --eval_freq=200000 \
     --save_freq=20000 \
     --log_freq=100 \
