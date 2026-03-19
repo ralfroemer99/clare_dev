@@ -337,7 +337,7 @@ def train(cfg: PEFTTrainPipelineConfig):
                         policy,
                         cfg.eval.n_episodes,
                         videos_dir=cfg.output_dir / "eval" / task / f"videos_step_{step_id}",
-                        max_episodes_rendered=100,
+                        max_episodes_rendered=4,
                         start_seed=cfg.seed,
                     )
                     eval_infos[task] = eval_info

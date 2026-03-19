@@ -68,7 +68,7 @@ class ERTrainPipelineConfig(TrainPipelineConfig):
     replay_num_workers: int = 16
     replay_batch_size: int = 8
 
-    max_episodes_rendered: int = 100
+    max_episodes_rendered: int = 4
 
 
 

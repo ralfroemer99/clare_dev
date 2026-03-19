@@ -65,7 +65,7 @@ class PackNetTrainPipelineConfig(TrainPipelineConfig):
     post_prune_steps: int = 20000
     ignore_modules: str | None = None
 
-    max_episodes_rendered: int = 100
+    max_episodes_rendered: int = 4
 
 
 @torch.no_grad()
@@ -414,7 +414,7 @@ def train(cfg: PackNetTrainPipelineConfig):
                         policy,
                         cfg.eval.n_episodes,
                         videos_dir=cfg.output_dir / "eval" / task / f"videos_step_{step_id}",
-                        max_episodes_rendered=100,
+                        max_episodes_rendered=4,
                         start_seed=cfg.seed,
                     )
                     eval_infos[task] = eval_info
