@@ -4,6 +4,7 @@ CHECKPOINT_ROOT=./outputs;
 
 STEPS=20000;
 LOG_STEPS=100;
+BS=128;
 
 python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --seed=$SEED \
@@ -13,7 +14,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --dataset.video_backend=pyav \
     --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --batch_size=32 \
+    --batch_size=$BS \
     --num_workers=16 \
     --steps=$STEPS \
     --eval_freq=0 \
@@ -26,7 +27,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --detect_distribution_shift_num_workers=16 \
     --detect_distribution_shift_log_freq=10 \
     --train_discriminators_steps=2000 \
-    --train_discriminators_batch_size=32 \
+    --train_discriminators_batch_size=$BS \
     --train_discriminators_num_workers=16 \
     --train_discriminators_log_freq=50 \
     --train_discriminators_eval_freq=2000 \
@@ -44,7 +45,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --dataset.video_backend=pyav \
     --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --batch_size=32 \
+    --batch_size=$BS \
     --num_workers=16 \
     --steps=$STEPS \
     --eval_freq=0 \
@@ -57,7 +58,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --detect_distribution_shift_num_workers=16 \
     --detect_distribution_shift_log_freq=10 \
     --train_discriminators_steps=2000 \
-    --train_discriminators_batch_size=32 \
+    --train_discriminators_batch_size=$BS \
     --train_discriminators_num_workers=16 \
     --train_discriminators_log_freq=50 \
     --train_discriminators_eval_freq=2000 \
@@ -75,7 +76,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --dataset.video_backend=pyav \
     --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --batch_size=32 \
+    --batch_size=$BS \
     --num_workers=16 \
     --steps=$STEPS \
     --eval_freq=0 \
@@ -88,7 +89,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --detect_distribution_shift_num_workers=16 \
     --detect_distribution_shift_log_freq=10 \
     --train_discriminators_steps=2000 \
-    --train_discriminators_batch_size=32 \
+    --train_discriminators_batch_size=$BS \
     --train_discriminators_num_workers=16 \
     --train_discriminators_log_freq=50 \
     --train_discriminators_eval_freq=2000 \
@@ -106,7 +107,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --dataset.video_backend=pyav \
     --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --batch_size=32 \
+    --batch_size=$BS \
     --num_workers=16 \
     --steps=$STEPS \
     --eval_freq=0 \
@@ -119,7 +120,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --detect_distribution_shift_num_workers=16 \
     --detect_distribution_shift_log_freq=10 \
     --train_discriminators_steps=2000 \
-    --train_discriminators_batch_size=32 \
+    --train_discriminators_batch_size=$BS \
     --train_discriminators_num_workers=16 \
     --train_discriminators_log_freq=50 \
     --train_discriminators_eval_freq=2000 \
@@ -137,7 +138,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --dataset.video_backend=pyav \
     --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --batch_size=32 \
+    --batch_size=$BS \
     --num_workers=16 \
     --steps=$STEPS \
     --eval_freq=0 \
@@ -150,7 +151,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --detect_distribution_shift_num_workers=16 \
     --detect_distribution_shift_log_freq=10 \
     --train_discriminators_steps=2000 \
-    --train_discriminators_batch_size=32 \
+    --train_discriminators_batch_size=$BS \
     --train_discriminators_num_workers=16 \
     --train_discriminators_log_freq=50 \
     --train_discriminators_eval_freq=2000 \

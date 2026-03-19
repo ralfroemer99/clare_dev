@@ -49,7 +49,19 @@ from lerobot.utils.utils import (
     has_method,
     init_logging,
 )
-from lerobot.rl.wandb_utils import WandBLogger
+from lerobot.rl.wandb_utils import WandBLogger as _WandBLogger
+
+
+class WandBLogger(_WandBLogger):
+    _EXTRA_MODES = {"train_discriminator", "continual_learning", "eval_after_prune"}
+
+    def log_dict(self, d, step=None, mode="train", custom_step_key=None):
+        if mode in self._EXTRA_MODES:
+            if step is None:
+                raise ValueError("step must be provided")
+            self._wandb.log({f"{mode}/{k}": v for k, v in d.items() if isinstance(v, (int, float, str))}, step=step)
+        else:
+            super().log_dict(d, step=step, mode=mode, custom_step_key=custom_step_key)
 
 from peft import get_peft_model, PeftConfig, PeftModel
 from peft.mapping import PEFT_TYPE_TO_PREFIX_MAPPING
@@ -203,7 +215,7 @@ def detect_distribution_shift(cfg: PEFTTrainPipelineConfig,
                 wandb_step = step
                 if global_steps > 0:
                     wandb_step += global_steps
-                wandb_logger.log_dict({f"detect_shift/{k}": v for k, v in wandb_log_dict.items() if isinstance(v, (int, float, str))}, wandb_step, mode='train')
+                wandb_logger.log_dict(wandb_log_dict, wandb_step, mode='continual_learning')
             detect_tracker.reset_averages()
 
     z_scores_mean = {}
@@ -694,11 +706,7 @@ def train(cfg: PEFTTrainPipelineConfig):
                 wandb_log_dict = train_tracker.to_dict()
                 if output_dict:
                     wandb_log_dict.update(output_dict)
-                if wandb_mode == "train_discriminator":
-                    prefixed = {f"train_discriminator/{k}": v for k, v in wandb_log_dict.items() if isinstance(v, (int, float, str))}
-                    wandb_logger._wandb.log(prefixed, step=step)
-                else:
-                    wandb_logger.log_dict(wandb_log_dict, step, mode="train")
+                wandb_logger.log_dict(wandb_log_dict, step, mode=wandb_mode)
             train_tracker.reset_averages()
 
         if cfg.env and is_eval_step:
