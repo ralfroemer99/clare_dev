@@ -10,7 +10,8 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_0_put_bowl_encoder_mlp_adapter_threshold_1_0 \
     --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_0_put_bowl_encoder_mlp_adapter_threshold_1_0 \
     --dataset.repo_id=continuallearning/real_0_put_bowl_filtered \
-    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain \
+    --dataset.video_backend=pyav \
+    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --batch_size=32 \
     --num_workers=16 \
@@ -40,7 +41,8 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_1_stack_bowls_encoder_mlp_adapter_threshold_1_0 \
     --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_1_stack_bowls_encoder_mlp_adapter_threshold_1_0 \
     --dataset.repo_id=continuallearning/real_1_stack_bowls_filtered \
-    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain \
+    --dataset.video_backend=pyav \
+    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --batch_size=32 \
     --num_workers=16 \
@@ -70,7 +72,8 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_2_put_moka_pot_encoder_mlp_adapter_threshold_1_0 \
     --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_2_put_moka_pot_encoder_mlp_adapter_threshold_1_0 \
     --dataset.repo_id=continuallearning/real_2_put_moka_pot_filtered \
-    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain \
+    --dataset.video_backend=pyav \
+    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --batch_size=32 \
     --num_workers=16 \
@@ -100,7 +103,8 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_3_close_drawer_encoder_mlp_adapter_threshold_1_0 \
     --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_3_close_drawer_encoder_mlp_adapter_threshold_1_0 \
     --dataset.repo_id=continuallearning/real_3_close_drawer_filtered \
-    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain \
+    --dataset.video_backend=pyav \
+    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --batch_size=32 \
     --num_workers=16 \
@@ -130,7 +134,8 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_4_put_lego_into_drawer_encoder_mlp_adapter_threshold_1_0 \
     --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_4_put_lego_into_drawer_encoder_mlp_adapter_threshold_1_0 \
     --dataset.repo_id=continuallearning/real_4_put_lego_into_drawer_filtered \
-    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain \
+    --dataset.video_backend=pyav \
+    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --batch_size=32 \
     --num_workers=16 \

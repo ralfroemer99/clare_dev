@@ -1,7 +1,9 @@
 python ./lerobot_lsy/src/lerobot/scripts/train_real.py \
+    --seed=42 \
     --job_name=dit_flow_mt_franka_pretrain \
     --output_dir=./outputs/real/dit_flow_mt_franka_pretrain \
     --dataset.repo_id=continuallearning/pretraining_v2_lerobot30 \
+    --dataset.video_backend=pyav \
     --policy.type=ditflow_mt \
     --policy.push_to_hub=false \
     --batch_size=32 \
@@ -9,7 +11,7 @@ python ./lerobot_lsy/src/lerobot/scripts/train_real.py \
     --steps=200000 \
     --eval_freq=0 \
     --save_freq=50000 \
-    --log_freq=500 \
+    --log_freq=100 \
     --wandb.enable=true \
     --wandb.disable_artifact=true \
     --wandb.project=clare_experiments \

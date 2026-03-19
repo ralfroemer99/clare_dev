@@ -1,25 +1,4 @@
-#!/usr/bin/env python
-
-# Copyright 2024 The HuggingFace Inc. team. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# import debugpy
-# debugpy.listen(("0.0.0.0", 5678))
-# print("Waiting for debugger attach…")
-# debugpy.wait_for_client()
-# print("Hello, Debugging!")
-
+# This script requires the LeRobot v3.0 from lerobot_yi!
 import logging
 import time
 from contextlib import nullcontext
@@ -139,8 +118,6 @@ def train(cfg: TrainPipelineConfig):
     logging.info("Creating dataset")
     # Make dataset for training and for eval
     dataset = make_dataset(cfg)
-    if cfg.eval_with_dataset is not None:
-        dataset_eval = LeRobotDataset(cfg.eval_with_dataset, video_backend="pyav")
 
     # Create environment used for evaluating checkpoints during training on simulation data.
     # On real-world data, no need to create an environment as evaluations are done outside train.py,
@@ -181,7 +158,9 @@ def train(cfg: TrainPipelineConfig):
     if hasattr(cfg.policy, "drop_n_last_frames"):
         shuffle = False
         sampler = EpisodeAwareSampler(
-            dataset.episode_data_index,
+            dataset.meta.episodes["dataset_from_index"],
+            dataset.meta.episodes["dataset_to_index"],
+            episode_indices_to_use=dataset.episodes,
             drop_n_last_frames=cfg.policy.drop_n_last_frames,
             shuffle=True,
         )

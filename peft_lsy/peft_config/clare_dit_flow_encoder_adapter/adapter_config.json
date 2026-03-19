@@ -11,7 +11,7 @@
   "inference_mode": true,
   "batch_first": true,
   "num_learned_task": 0,
-  "feature_dim": 2576,
+  "feature_dim": 2600,
   "out_feature_dim": 512,
   "use_trainable_copy": false,
   "add_zero_init_conv_layer": false,
@@ -19,7 +19,7 @@
   "discriminator_cfg": {
     "type": "autoencoder",
     "batch_first": true,
-    "feature_dim": 2576,
+    "feature_dim": 2600,
     "feature_fusion": false,
     "fused_feature_dim": null,
     "hidden_dim": 256,
