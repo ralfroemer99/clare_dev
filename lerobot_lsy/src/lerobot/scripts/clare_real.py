@@ -203,7 +203,7 @@ def detect_distribution_shift(cfg: PEFTTrainPipelineConfig,
                 wandb_step = step
                 if global_steps > 0:
                     wandb_step += global_steps
-                wandb_logger.log_dict(wandb_log_dict, wandb_step, mode='continual_learning')
+                wandb_logger.log_dict({f"detect_shift/{k}": v for k, v in wandb_log_dict.items() if isinstance(v, (int, float, str))}, wandb_step, mode='train')
             detect_tracker.reset_averages()
 
     z_scores_mean = {}
@@ -694,7 +694,11 @@ def train(cfg: PEFTTrainPipelineConfig):
                 wandb_log_dict = train_tracker.to_dict()
                 if output_dict:
                     wandb_log_dict.update(output_dict)
-                wandb_logger.log_dict(wandb_log_dict, step, mode=wandb_mode)
+                if wandb_mode == "train_discriminator":
+                    prefixed = {f"train_discriminator/{k}": v for k, v in wandb_log_dict.items() if isinstance(v, (int, float, str))}
+                    wandb_logger._wandb.log(prefixed, step=step)
+                else:
+                    wandb_logger.log_dict(wandb_log_dict, step, mode="train")
             train_tracker.reset_averages()
 
         if cfg.env and is_eval_step:
