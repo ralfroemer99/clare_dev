@@ -2,17 +2,17 @@ SEED=${1:-42};
 
 CHECKPOINT_ROOT=./outputs;
 
-STEPS=20000;
+STEPS=40000;
 LOG_STEPS=100;
 BS=128;
 
 python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --seed=$SEED \
-    --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_0_put_bowl_encoder_mlp_adapter_threshold_1_0 \
-    --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_0_put_bowl_encoder_mlp_adapter_threshold_1_0 \
+    --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_0_put_bowl_encoder_mlp_adapter_threshold_1_0_B$BS \
+    --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_0_put_bowl_encoder_mlp_adapter_threshold_1_0_B$BS \
     --dataset.repo_id=continuallearning/real_0_put_bowl_filtered \
     --dataset.video_backend=pyav \
-    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain_B$BS/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --batch_size=$BS \
     --num_workers=16 \
@@ -39,11 +39,11 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
 && \
 python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --seed=$SEED \
-    --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_1_stack_bowls_encoder_mlp_adapter_threshold_1_0 \
-    --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_1_stack_bowls_encoder_mlp_adapter_threshold_1_0 \
+    --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_1_stack_bowls_encoder_mlp_adapter_threshold_1_0_B$BS \
+    --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_1_stack_bowls_encoder_mlp_adapter_threshold_1_0_B$BS \
     --dataset.repo_id=continuallearning/real_1_stack_bowls_filtered \
     --dataset.video_backend=pyav \
-    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain_B$BS/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --batch_size=$BS \
     --num_workers=16 \
@@ -51,7 +51,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --eval_freq=0 \
     --save_freq=$STEPS \
     --log_freq=$LOG_STEPS \
-    --peft_weight_path=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_0_put_bowl_encoder_mlp_adapter_threshold_1_0/checkpoints/last/adapter \
+    --peft_weight_path=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_0_put_bowl_encoder_mlp_adapter_threshold_1_0_B$BS/checkpoints/last/adapter \
     --expand_threshold=1.0 \
     --detect_distribution_shift_steps=200 \
     --detect_distribution_shift_batch_size=32 \
@@ -70,11 +70,11 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
 && \
 python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --seed=$SEED \
-    --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_2_put_moka_pot_encoder_mlp_adapter_threshold_1_0 \
-    --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_2_put_moka_pot_encoder_mlp_adapter_threshold_1_0 \
+    --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_2_put_moka_pot_encoder_mlp_adapter_threshold_1_0_B$BS \
+    --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_2_put_moka_pot_encoder_mlp_adapter_threshold_1_0_B$BS \
     --dataset.repo_id=continuallearning/real_2_put_moka_pot_filtered \
     --dataset.video_backend=pyav \
-    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain_B$BS/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --batch_size=$BS \
     --num_workers=16 \
@@ -82,7 +82,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --eval_freq=0 \
     --save_freq=$STEPS \
     --log_freq=$LOG_STEPS \
-    --peft_weight_path=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_1_stack_bowls_encoder_mlp_adapter_threshold_1_0/checkpoints/last/adapter \
+    --peft_weight_path=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_1_stack_bowls_encoder_mlp_adapter_threshold_1_0_B$BS/checkpoints/last/adapter \
     --expand_threshold=1.0 \
     --detect_distribution_shift_steps=200 \
     --detect_distribution_shift_batch_size=32 \
@@ -101,11 +101,11 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
 && \
 python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --seed=$SEED \
-    --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_3_close_drawer_encoder_mlp_adapter_threshold_1_0 \
-    --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_3_close_drawer_encoder_mlp_adapter_threshold_1_0 \
+    --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_3_close_drawer_encoder_mlp_adapter_threshold_1_0_B$BS \
+    --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_3_close_drawer_encoder_mlp_adapter_threshold_1_0_B$BS \
     --dataset.repo_id=continuallearning/real_3_close_drawer_filtered \
     --dataset.video_backend=pyav \
-    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain_B$BS/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --batch_size=$BS \
     --num_workers=16 \
@@ -113,7 +113,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --eval_freq=0 \
     --save_freq=$STEPS \
     --log_freq=$LOG_STEPS \
-    --peft_weight_path=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_2_put_moka_pot_encoder_mlp_adapter_threshold_1_0/checkpoints/last/adapter \
+    --peft_weight_path=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_2_put_moka_pot_encoder_mlp_adapter_threshold_1_0_B$BS/checkpoints/last/adapter \
     --expand_threshold=1.0 \
     --detect_distribution_shift_steps=200 \
     --detect_distribution_shift_batch_size=32 \
@@ -132,11 +132,11 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
 && \
 python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --seed=$SEED \
-    --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_4_put_lego_into_drawer_encoder_mlp_adapter_threshold_1_0 \
-    --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_4_put_lego_into_drawer_encoder_mlp_adapter_threshold_1_0 \
+    --job_name=dit_flow_mt_cl_seed_${SEED}_franka_task_4_put_lego_into_drawer_encoder_mlp_adapter_threshold_1_0_B$BS \
+    --output_dir=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_4_put_lego_into_drawer_encoder_mlp_adapter_threshold_1_0_B$BS \
     --dataset.repo_id=continuallearning/real_4_put_lego_into_drawer_filtered \
     --dataset.video_backend=pyav \
-    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/real/dit_flow_mt_franka_pretrain_B$BS/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --batch_size=$BS \
     --num_workers=16 \
@@ -144,7 +144,7 @@ python ./lerobot_lsy/src/lerobot/scripts/clare_real.py \
     --eval_freq=0 \
     --save_freq=$STEPS \
     --log_freq=$LOG_STEPS \
-    --peft_weight_path=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_3_close_drawer_encoder_mlp_adapter_threshold_1_0/checkpoints/last/adapter \
+    --peft_weight_path=./outputs/real/dit_flow_mt_cl_seed_${SEED}_franka_task_3_close_drawer_encoder_mlp_adapter_threshold_1_0_B$BS/checkpoints/last/adapter \
     --expand_threshold=1.0 \
     --detect_distribution_shift_steps=200 \
     --detect_distribution_shift_batch_size=32 \
