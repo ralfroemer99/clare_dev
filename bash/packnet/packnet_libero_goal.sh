@@ -6,17 +6,17 @@ SEED=${1:-42};
 DATASET_ROOT=continuallearning;
 CHECKPOINT_ROOT=./outputs;
 
-STEPS=20000;
+STEPS=200;
 LOG_STEPS=100;
-N_EVAL=100;
-BS_EVAL=25;
+N_EVAL=2;
+BS_EVAL=2;
 
 PRETRAIN_PATH=/home/ralf_roemer/projects/clare/outputs/dit_flow_mt_libero_90_pretrain_new;
 
 python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
     --seed=$SEED \
     --job_name=packnet_seed_${SEED}_libero_goal_task_0 \
-    --output_dir=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_0 \
+    --output_dir=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_0 \
     --dataset.repo_id=continuallearning/libero_goal_image_task_0 \
     --policy.path=$PRETRAIN_PATH \
     --policy.push_to_hub=false \
@@ -44,9 +44,9 @@ python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
 python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
     --seed=$SEED \
     --job_name=packnet_seed_${SEED}_libero_goal_task_1 \
-    --output_dir=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_1 \
+    --output_dir=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_1 \
     --dataset.repo_id=continuallearning/libero_goal_image_task_1 \
-    --policy.path=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_0/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_0/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --current_task=1 \
     --prune_ratio=0.75 \
@@ -72,9 +72,9 @@ python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
 python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
     --seed=$SEED \
     --job_name=packnet_seed_${SEED}_libero_goal_task_2 \
-    --output_dir=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_2 \
+    --output_dir=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_2 \
     --dataset.repo_id=continuallearning/libero_goal_image_task_2 \
-    --policy.path=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_1/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_1/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --current_task=2 \
     --prune_ratio=0.75 \
@@ -100,9 +100,9 @@ python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
 python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
     --seed=$SEED \
     --job_name=packnet_seed_${SEED}_libero_goal_task_3 \
-    --output_dir=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_3 \
+    --output_dir=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_3 \
     --dataset.repo_id=continuallearning/libero_goal_image_task_3 \
-    --policy.path=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_2/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_2/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --current_task=3 \
     --prune_ratio=0.75 \
@@ -128,9 +128,9 @@ python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
 python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
     --seed=$SEED \
     --job_name=packnet_seed_${SEED}_libero_goal_task_4 \
-    --output_dir=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_4 \
+    --output_dir=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_4 \
     --dataset.repo_id=continuallearning/libero_goal_image_task_4 \
-    --policy.path=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_3/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_3/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --current_task=4 \
     --prune_ratio=0.75 \
@@ -156,9 +156,9 @@ python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
 python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
     --seed=$SEED \
     --job_name=packnet_seed_${SEED}_libero_goal_task_5 \
-    --output_dir=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_5 \
+    --output_dir=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_5 \
     --dataset.repo_id=continuallearning/libero_goal_image_task_5 \
-    --policy.path=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_4/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_4/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --current_task=5 \
     --prune_ratio=0.75 \
@@ -184,9 +184,9 @@ python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
 python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
     --seed=$SEED \
     --job_name=packnet_seed_${SEED}_libero_goal_task_6 \
-    --output_dir=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_6 \
+    --output_dir=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_6 \
     --dataset.repo_id=continuallearning/libero_goal_image_task_6 \
-    --policy.path=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_5/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_5/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --current_task=6 \
     --prune_ratio=0.75 \
@@ -212,9 +212,9 @@ python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
 python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
     --seed=$SEED \
     --job_name=packnet_seed_${SEED}_libero_goal_task_7 \
-    --output_dir=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_7 \
+    --output_dir=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_7 \
     --dataset.repo_id=continuallearning/libero_goal_image_task_7 \
-    --policy.path=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_6/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_6/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --current_task=7 \
     --prune_ratio=0.75 \
@@ -240,9 +240,9 @@ python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
 python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
     --seed=$SEED \
     --job_name=packnet_seed_${SEED}_libero_goal_task_8 \
-    --output_dir=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_8 \
+    --output_dir=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_8 \
     --dataset.repo_id=continuallearning/libero_goal_image_task_8 \
-    --policy.path=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_7/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_7/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --current_task=8 \
     --prune_ratio=0.75 \
@@ -268,9 +268,9 @@ python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
 python ./lerobot_lsy/src/lerobot/scripts/packnet.py \
     --seed=$SEED \
     --job_name=packnet_seed_${SEED}_libero_goal_task_9 \
-    --output_dir=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_9 \
+    --output_dir=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_9 \
     --dataset.repo_id=continuallearning/libero_goal_image_task_9 \
-    --policy.path=./outputs/packnet/packnet_seed_${SEED}_libero_goal_task_8/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_goal/packnet/packnet_seed_${SEED}_libero_goal_task_8/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
     --current_task=9 \
     --prune_ratio=0.75 \
