@@ -153,10 +153,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--outputs_dir", default="./outputs")
     parser.add_argument("--run_prefix",  required=True,
-                        help="Comma-separated list of run prefixes (one per experiment)")
+                        help="Comma-separated list of run prefixes (one per experiment). "
+                             "Use {seed} placeholder when --seeds is specified, e.g. 'er_seed_{seed}_libero_goal'")
     parser.add_argument("--suite",       required=True,
                         help="Comma-separated suite names matching run_prefix order")
     parser.add_argument("--n_tasks",     type=int, default=10)
+    parser.add_argument("--seeds",       default=None,
+                        help="Comma-separated list of seeds, e.g. '0,1,42'. "
+                             "If set, run_prefix must contain {seed} placeholder. "
+                             "Reports mean ± std across seeds.")
     parser.add_argument("--verbose",     action="store_true")
     args = parser.parse_args()
 
@@ -164,17 +169,34 @@ def main():
     suites   = [s.strip() for s in args.suite.split(",")]
     assert len(prefixes) == len(suites), "--run_prefix and --suite must have the same number of entries"
 
-    for prefix, suite in zip(prefixes, suites):
+    for prefix_template, suite in zip(prefixes, suites):
         print(f"\n{'='*60}")
-        print(f"Experiment: {prefix}")
+        print(f"Experiment: {prefix_template}  |  suite: {suite}")
         print(f"{'='*60}")
 
-        R = fetch_performance_matrix(args.outputs_dir, prefix, suite, args.n_tasks, verbose=args.verbose)
-        m = compute_cl_metrics(R, n_tasks=args.n_tasks)
+        if args.seeds is not None:
+            seeds = [s.strip() for s in args.seeds.split(",")]
+            all_metrics = {"FWT": [], "AUC": [], "NBT": []}
+            for seed in seeds:
+                prefix = prefix_template.replace("{seed}", seed)
+                print(f"\n  Seed {seed}: {prefix}")
+                R = fetch_performance_matrix(args.outputs_dir, prefix, suite, args.n_tasks, verbose=args.verbose)
+                m = compute_cl_metrics(R, n_tasks=args.n_tasks)
+                print(f"    FWT={m['FWT']*100:.2f}%  AUC={m['AUC']*100:.2f}%  NBT={m['NBT']*100:.2f}%")
+                for k in all_metrics:
+                    all_metrics[k].append(m[k])
 
-        print(f"\n  FWT (Forward Transfer):        {m['FWT']:.4f}  ({m['FWT']*100:.1f}%)  — avg success right after learning each task")
-        print(f"  AUC (Area Under Curve):        {m['AUC']:.4f}  ({m['AUC']*100:.1f}%)  — avg success across all stages")
-        print(f"  NBT (Neg. Backward Transfer):  {m['NBT']:.4f}  ({m['NBT']*100:.1f}%)  — avg forgetting (lower = better)")
+            print(f"\n  --- Mean ± Std across seeds {seeds} ---")
+            for k in ["AUC", "FWT", "NBT"]:
+                vals = np.array(all_metrics[k])
+                mean, std = np.nanmean(vals), np.nanstd(vals)
+                print(f"  {k:4s}: {mean*100:.2f}% ± {std*100:.2f}%")
+        else:
+            R = fetch_performance_matrix(args.outputs_dir, prefix_template, suite, args.n_tasks, verbose=args.verbose)
+            m = compute_cl_metrics(R, n_tasks=args.n_tasks)
+            print(f"\n  FWT (Forward Transfer):        {m['FWT']:.4f}  ({m['FWT']*100:.1f}%)  — avg success right after learning each task")
+            print(f"  AUC (Area Under Curve):        {m['AUC']:.4f}  ({m['AUC']*100:.1f}%)  — avg success across all stages")
+            print(f"  NBT (Neg. Backward Transfer):  {m['NBT']:.4f}  ({m['NBT']*100:.1f}%)  — avg forgetting (lower = better)")
 
         # print(f"\n  Diagonal R[i,i] — peak performance right after training each task:")
         # for i, v in enumerate(m["diag"]):
