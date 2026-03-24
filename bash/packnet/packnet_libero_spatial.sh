@@ -8,7 +8,7 @@ CHECKPOINT_ROOT=./outputs;
 
 STEPS=20000;
 LOG_STEPS=100;
-N_EVAL=100;
+N_EVAL=50;
 BS_EVAL=25;
 
 PRETRAIN_PATH=/home/ralf_roemer/projects/clare/outputs/dit_flow_mt_libero_90_pretrain_new;
