@@ -8,7 +8,7 @@ CHECKPOINT_ROOT=./outputs;
 
 STEPS=20000;
 LOG_STEPS=100;
-N_EVAL=100;
+N_EVAL=50;
 BS_EVAL=25;
 
 PRETRAIN_PATH=/home/ralf_roemer/projects/clare/outputs/dit_flow_mt_libero_90_pretrain_new;
@@ -17,7 +17,7 @@ LORA_CFG_PATH=./peft_lsy/peft_config/lora_dit_flow_encoder_adapter;
 python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
     --seed=$SEED \
     --job_name=seq_lora_seed_${SEED}_libero_spatial_task_0 \
-    --output_dir=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_0 \
+    --output_dir=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_0 \
     --dataset.repo_id=continuallearning/libero_spatial_image_task_0 \
     --policy.path=$PRETRAIN_PATH \
     --policy.push_to_hub=false \
@@ -42,11 +42,11 @@ python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
 python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
     --seed=$SEED \
     --job_name=seq_lora_seed_${SEED}_libero_spatial_task_1 \
-    --output_dir=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_1 \
+    --output_dir=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_1 \
     --dataset.repo_id=continuallearning/libero_spatial_image_task_1 \
-    --policy.path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_0/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_0/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --peft_cfg_path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_0/checkpoints/last/adapter \
+    --peft_cfg_path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_0/checkpoints/last/adapter \
     --batch_size=32 \
     --num_workers=16 \
     --steps=$STEPS \
@@ -67,11 +67,11 @@ python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
 python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
     --seed=$SEED \
     --job_name=seq_lora_seed_${SEED}_libero_spatial_task_2 \
-    --output_dir=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_2 \
+    --output_dir=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_2 \
     --dataset.repo_id=continuallearning/libero_spatial_image_task_2 \
-    --policy.path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_1/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_1/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --peft_cfg_path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_1/checkpoints/last/adapter \
+    --peft_cfg_path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_1/checkpoints/last/adapter \
     --batch_size=32 \
     --num_workers=16 \
     --steps=$STEPS \
@@ -92,11 +92,11 @@ python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
 python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
     --seed=$SEED \
     --job_name=seq_lora_seed_${SEED}_libero_spatial_task_3 \
-    --output_dir=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_3 \
+    --output_dir=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_3 \
     --dataset.repo_id=continuallearning/libero_spatial_image_task_3 \
-    --policy.path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_2/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_2/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --peft_cfg_path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_2/checkpoints/last/adapter \
+    --peft_cfg_path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_2/checkpoints/last/adapter \
     --batch_size=32 \
     --num_workers=16 \
     --steps=$STEPS \
@@ -117,11 +117,11 @@ python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
 python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
     --seed=$SEED \
     --job_name=seq_lora_seed_${SEED}_libero_spatial_task_4 \
-    --output_dir=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_4 \
+    --output_dir=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_4 \
     --dataset.repo_id=continuallearning/libero_spatial_image_task_4 \
-    --policy.path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_3/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_3/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --peft_cfg_path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_3/checkpoints/last/adapter \
+    --peft_cfg_path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_3/checkpoints/last/adapter \
     --batch_size=32 \
     --num_workers=16 \
     --steps=$STEPS \
@@ -142,11 +142,11 @@ python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
 python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
     --seed=$SEED \
     --job_name=seq_lora_seed_${SEED}_libero_spatial_task_5 \
-    --output_dir=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_5 \
+    --output_dir=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_5 \
     --dataset.repo_id=continuallearning/libero_spatial_image_task_5 \
-    --policy.path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_4/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_4/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --peft_cfg_path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_4/checkpoints/last/adapter \
+    --peft_cfg_path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_4/checkpoints/last/adapter \
     --batch_size=32 \
     --num_workers=16 \
     --steps=$STEPS \
@@ -167,11 +167,11 @@ python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
 python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
     --seed=$SEED \
     --job_name=seq_lora_seed_${SEED}_libero_spatial_task_6 \
-    --output_dir=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_6 \
+    --output_dir=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_6 \
     --dataset.repo_id=continuallearning/libero_spatial_image_task_6 \
-    --policy.path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_5/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_5/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --peft_cfg_path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_5/checkpoints/last/adapter \
+    --peft_cfg_path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_5/checkpoints/last/adapter \
     --batch_size=32 \
     --num_workers=16 \
     --steps=$STEPS \
@@ -192,11 +192,11 @@ python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
 python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
     --seed=$SEED \
     --job_name=seq_lora_seed_${SEED}_libero_spatial_task_7 \
-    --output_dir=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_7 \
+    --output_dir=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_7 \
     --dataset.repo_id=continuallearning/libero_spatial_image_task_7 \
-    --policy.path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_6/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_6/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --peft_cfg_path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_6/checkpoints/last/adapter \
+    --peft_cfg_path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_6/checkpoints/last/adapter \
     --batch_size=32 \
     --num_workers=16 \
     --steps=$STEPS \
@@ -217,11 +217,11 @@ python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
 python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
     --seed=$SEED \
     --job_name=seq_lora_seed_${SEED}_libero_spatial_task_8 \
-    --output_dir=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_8 \
+    --output_dir=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_8 \
     --dataset.repo_id=continuallearning/libero_spatial_image_task_8 \
-    --policy.path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_7/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_7/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --peft_cfg_path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_7/checkpoints/last/adapter \
+    --peft_cfg_path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_7/checkpoints/last/adapter \
     --batch_size=32 \
     --num_workers=16 \
     --steps=$STEPS \
@@ -242,11 +242,11 @@ python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
 python ./lerobot_lsy/src/lerobot/scripts/train_peft.py \
     --seed=$SEED \
     --job_name=seq_lora_seed_${SEED}_libero_spatial_task_9 \
-    --output_dir=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_9 \
+    --output_dir=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_9 \
     --dataset.repo_id=continuallearning/libero_spatial_image_task_9 \
-    --policy.path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_8/checkpoints/last/pretrained_model \
+    --policy.path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_8/checkpoints/last/pretrained_model \
     --policy.push_to_hub=false \
-    --peft_cfg_path=./outputs/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_8/checkpoints/last/adapter \
+    --peft_cfg_path=./outputs/libero_spatial/seq_lora/seq_lora_seed_${SEED}_libero_spatial_task_8/checkpoints/last/adapter \
     --batch_size=32 \
     --num_workers=16 \
     --steps=$STEPS \
