@@ -8,7 +8,7 @@ LOG_STEPS=100;
 N_EVAL=10;
 BS_EVAL=10;
 
-PRETRAIN_PATH=/home/ralf_roemer/projects/clare/outputs/dit_flow_mt_libero_90_pretrain_new;
+PRETRAIN_PATH=${PRETRAIN_PATH:-./outputs/dit_flow_mt_libero_90_pretrain_new};
 
 python ./lerobot_lsy/src/lerobot/scripts/train_eval_multi.py \
     --seed=$SEED \
@@ -34,7 +34,6 @@ python ./lerobot_lsy/src/lerobot/scripts/train_eval_multi.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_1 \
@@ -62,7 +61,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_2 \
@@ -89,9 +87,8 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.disable_artifact=true \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
-&& \
-
-python ./lerobot_lsy/src/lerobot/scripts/er.py \
+&& 
+\python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_3 \
     --output_dir=./outputs/libero_40_er/er_seed_${SEED}_libero_40_task_3 \
@@ -118,7 +115,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_4 \
@@ -146,7 +142,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_5 \
@@ -174,7 +169,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_6 \
@@ -202,7 +196,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_7 \
@@ -230,7 +223,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_8 \
@@ -258,7 +250,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_9 \
@@ -286,7 +277,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_10 \
@@ -314,7 +304,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_11 \
@@ -342,7 +331,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_12 \
@@ -370,7 +358,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_13 \
@@ -398,7 +385,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_14 \
@@ -426,7 +412,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_15 \
@@ -454,7 +439,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_16 \
@@ -482,7 +466,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_17 \
@@ -510,7 +493,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_18 \
@@ -538,7 +520,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_19 \
@@ -566,7 +547,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_20 \
@@ -594,7 +574,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_21 \
@@ -622,7 +601,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_22 \
@@ -650,7 +628,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_23 \
@@ -678,7 +655,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_24 \
@@ -706,7 +682,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_25 \
@@ -734,7 +709,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_26 \
@@ -762,7 +736,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_27 \
@@ -790,7 +763,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_28 \
@@ -818,7 +790,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_29 \
@@ -846,7 +817,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_30 \
@@ -874,7 +844,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_31 \
@@ -902,7 +871,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_32 \
@@ -930,7 +898,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_33 \
@@ -958,7 +925,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_34 \
@@ -986,7 +952,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_35 \
@@ -1014,7 +979,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_36 \
@@ -1042,7 +1006,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_37 \
@@ -1070,7 +1033,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_38 \
@@ -1098,7 +1060,6 @@ python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --wandb.project=clare_experiments \
     --wandb.entity=ralf-roemer \
 && \
-
 python ./lerobot_lsy/src/lerobot/scripts/er.py \
     --seed=$SEED \
     --job_name=er_seed_${SEED}_libero_40_task_39 \
