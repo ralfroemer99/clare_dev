@@ -213,13 +213,25 @@ def train(cfg: ERTrainPipelineConfig):
 
         # env_cfg = copy.deepcopy(cfg.env)
 
+        _TASK_PREFIX_TO_BENCHMARK = {
+            "Libero_Object_": "libero_object",
+            "Libero_Spatial_": "libero_spatial",
+            "Libero_Goal_": "libero_goal",
+            "Libero_10_": "libero_10",
+            "Libero_90_": "libero_90",
+        }
+
         eval_envs = {}
         for task in task_list:
             env_cfg = copy.deepcopy(cfg.env)
             env_cfg.task = task
+            for prefix, benchmark in _TASK_PREFIX_TO_BENCHMARK.items():
+                if task.startswith(prefix):
+                    env_cfg.benchmark = benchmark
+                    break
             # eval_env = make_env(
-            #     env_cfg, 
-            #     n_envs=cfg.eval.batch_size, 
+            #     env_cfg,
+            #     n_envs=cfg.eval.batch_size,
             #     use_async_envs=cfg.eval.use_async_envs
             # )
             # eval_envs[task] = eval_env

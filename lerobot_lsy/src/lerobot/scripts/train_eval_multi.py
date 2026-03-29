@@ -140,10 +140,22 @@ def train(cfg: TrainPipelineConfig):
 
         # env_cfg = copy.deepcopy(cfg.env)
 
+        _TASK_PREFIX_TO_BENCHMARK = {
+            "Libero_Object_": "libero_object",
+            "Libero_Spatial_": "libero_spatial",
+            "Libero_Goal_": "libero_goal",
+            "Libero_10_": "libero_10",
+            "Libero_90_": "libero_90",
+        }
+
         eval_envs = {}
         for task in task_list:
             env_cfg = copy.deepcopy(cfg.env)
             env_cfg.task = task
+            for prefix, benchmark in _TASK_PREFIX_TO_BENCHMARK.items():
+                if task.startswith(prefix):
+                    env_cfg.benchmark = benchmark
+                    break
             eval_envs[task] = env_cfg
 
     logging.info("Creating policy")
