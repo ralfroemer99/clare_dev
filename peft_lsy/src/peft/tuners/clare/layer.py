@@ -8,7 +8,8 @@ import torch.nn as nn
 from torch.func import vmap, functional_call, stack_module_state
 import einops
 from .config import CLAREConfig, FuncAdapterConfig, CLAREModuleConfig
-from .discriminator import Discriminator, BatchedAutoEncoderSmall, get_discriminaor_class
+from .discriminator import (Discriminator, BatchedAutoEncoderSmall, BatchedAutoEncoder,
+                            create_batched_discriminator, get_discriminaor_class)
 from peft.tuners.tuners_utils import BaseTunerLayer, check_adapters_to_merge
 from .lora_layer import LoRALinear, LoRAMultiheadAttention
 from .func_adapter import FuncAdapter, LoRAFuncAdapter
@@ -191,6 +192,7 @@ class CLARELayer(nn.Module, BaseTunerLayer):
         self._previous_forwarded_adapter_id:int = -1
         self._stack_discriminator_once_in_eval: bool = True
         self._stacked_discriminator = {}
+        self._timing_enabled: bool = False
 
     def _create_adapter(self):
         if self.module_config.use_trainable_copy:
@@ -212,26 +214,27 @@ class CLARELayer(nn.Module, BaseTunerLayer):
         return new_dis
 
     def _forward_discriminators(self, x: torch.Tensor):
+        discriminators = self.clare_discriminators[self.adapter_name]
 
-        # if self._stack_discriminator_once_in_eval:
-        #     new_batched_discriminator = BatchedAutoEncoderSmall(self.module_config.discriminator_cfg, self.clare_discriminators[self.adapter_name])
-        #     new_batched_discriminator.to(device=self._base_layer_device, dtype=self._base_layer_dtype)
-        #     self._stacked_discriminator[self.adapter_name] = new_batched_discriminator
-        #     self._stack_discriminator_once_in_eval = False
+        # On the first eval call after a training phase, try to build a batched discriminator
+        if self._stack_discriminator_once_in_eval:
+            batched = create_batched_discriminator(discriminators)
+            if batched is not None:
+                batched.to(self._base_layer_device, dtype=self._base_layer_dtype)
+                self._stacked_discriminator[self.adapter_name] = batched
+            self._stack_discriminator_once_in_eval = False
 
-        # losses, info_dicts = self._stacked_discriminator[self.adapter_name](x)
+        if self.adapter_name in self._stacked_discriminator:
+            return self._stacked_discriminator[self.adapter_name](x)  # (N, B), list[dict]
 
+        # Sequential fallback (VAE, RND, mixed types, or LoRA AutoEncoder)
         losses = []
         info_dicts = []
-
-        for discriminator in self.clare_discriminators[self.adapter_name]:
+        for discriminator in discriminators:
             loss, info_dict = discriminator(x)
             losses.append(loss)
             info_dicts.append(info_dict)
-
-        losses = torch.stack(losses, dim=0)
-
-        return losses, info_dicts
+        return torch.stack(losses, dim=0), info_dicts
 
     def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         if self.training:
@@ -272,8 +275,17 @@ class CLARELayer(nn.Module, BaseTunerLayer):
                 base_result = self.base_layer(x, **kwargs)
                 result = base_result + adapter_result
         else:
+            _timing = self._timing_enabled and x.is_cuda
+
+            if _timing:
+                _disc_start = torch.cuda.Event(enable_timing=True)
+                _disc_end = torch.cuda.Event(enable_timing=True)
+                _disc_start.record()
 
             losses, info_dicts = self._forward_discriminators(x)
+
+            if _timing:
+                _disc_end.record()
 
             for indice, info_dict in enumerate(info_dicts):
                 self._info_dicts[f"discriminator_{indice}"] = info_dict
@@ -295,39 +307,53 @@ class CLARELayer(nn.Module, BaseTunerLayer):
                 B, T = adapter_input.shape[:2]
                 adapter_output_shape = (B, T, self.module_config.out_feature_dim)
 
-            # Process each sample individually
             adapter_result = torch.zeros(adapter_output_shape, device=adapter_input.device, dtype=adapter_input.dtype)
 
+            # Group sample indices by routed adapter to enable batched forwarding
+            adapter_groups: dict[int, list[int]] = {}
             for idx, top_1_idx in enumerate(top_1_idx_list):
-                _forwarded_adapter_id = self.clare_discriminators[self.adapter_name][top_1_idx].connected_adapter_indices.item()
-                
-                # Select single sample while preserving dims
-                current_input = adapter_input[idx]
-                
-                # Process this sample with its best adapter
+                adapter_id = self.clare_discriminators[self.adapter_name][top_1_idx].connected_adapter_indices.item()
+                if adapter_id not in adapter_groups:
+                    adapter_groups[adapter_id] = []
+                adapter_groups[adapter_id].append(idx)
+
+            if _timing:
+                _adap_start = torch.cuda.Event(enable_timing=True)
+                _adap_end = torch.cuda.Event(enable_timing=True)
+                _adap_start.record()
+
+            for adapter_id, sample_indices in adapter_groups.items():
                 if self.use_lora:
-                    self._activate_lora_adapter(_forwarded_adapter_id)
-                    if self.module_config.batch_first:
-                        current_input = current_input.unsqueeze(dim=0) # (T, D) -> (1, T, D) / (D) -> (1, D)
+                    self._activate_lora_adapter(adapter_id)
+                    batch_input = adapter_input[sample_indices]
+                    if adapter_input.ndim == 3 and not self.module_config.batch_first:
+                        # adapter_input was rearranged to (B, T, D); base_layer expects (T, K, D)
+                        batch_output = self.base_layer(batch_input.transpose(0, 1), **kwargs).transpose(0, 1)
                     else:
-                        current_input = current_input.unsqueeze(dim=-2) # (T, D) -> (T, 1, D) / (D) -> (1, D)
-                    current_output = self.base_layer(current_input, **kwargs)
-                    if self.module_config.batch_first:
-                        current_output = current_output.squeeze(dim=0) # (1, T, D) -> (T, D) / (1, D) -> (D)
-                    else:
-                        current_output = current_output.squeeze(dim=1) # (T, 1, D) -> (T, D) / (1, D) -> (D)
-                    adapter_result[idx]= current_output
+                        # 2D input (K, D) or 3D batch_first (K, T, D): pass directly
+                        batch_output = self.base_layer(batch_input, **kwargs)
+                    adapter_result[sample_indices] = batch_output
                 else:
-                    adapter_result[idx] = self.clare_func_adapters[self.adapter_name][_forwarded_adapter_id](current_input)
+                    batch_input = adapter_input[sample_indices]
+                    batch_output = self.clare_func_adapters[self.adapter_name][adapter_id](batch_input)
+                    adapter_result[sample_indices] = batch_output
+
+            if _timing:
+                _adap_end.record()
 
             if not self.module_config.batch_first and adapter_result.ndim == 3:
                 adapter_result = einops.rearrange(adapter_result, "b t d ... -> t b d ... ")
-        
+
             if self.use_lora:
                 result = adapter_result
             else:
                 base_result = self.base_layer(x, **kwargs)
                 result = base_result + adapter_result
+
+            if _timing:
+                torch.cuda.synchronize()
+                self._info_dicts["disc_time_ms"] = _disc_start.elapsed_time(_disc_end)
+                self._info_dicts["adapter_time_ms"] = _adap_start.elapsed_time(_adap_end)
 
         return result
 

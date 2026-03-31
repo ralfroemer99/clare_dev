@@ -6,6 +6,7 @@ from torch import Tensor, nn
 import einops
 import numpy as np
 from dataclasses import dataclass, field
+from typing import Optional
 
 from .config import DiscriminatorConfig
 
@@ -399,6 +400,186 @@ class BatchedAutoEncoderSmall(nn.Module):
             info_dicts.append(info_dict)
 
         return mean_losses, info_dicts
+
+
+class BatchedAutoEncoder(nn.Module):
+    """Batched parallel inference for AutoEncoder / AutoEncoderSmall discriminators.
+
+    Stacks weight matrices of N autoencoder instances into contiguous tensors
+    and runs a single einsum instead of N sequential forward calls.
+    Supports both 1-layer (AutoEncoderSmall) and 2-layer (AutoEncoder) architectures.
+    LoRA AutoEncoders are not supported (create_batched_discriminator returns None for those).
+    """
+
+    def __init__(self, config, autoencoders: list):
+        super().__init__()
+
+        self.config = config
+        self.feature_fusion = config.feature_fusion
+        first = autoencoders[0]
+        # Detect architecture: AutoEncoderSmall has bare nn.Linear encoder;
+        # AutoEncoder has nn.Sequential encoder (2-layer).
+        self.use_bottleneck = isinstance(first, AutoEncoder)
+        self._autoencoders = autoencoders
+
+        if self.feature_fusion:
+            fus_W, fus_b = [], []
+            for ae in autoencoders:
+                fus_W.append(copy.deepcopy(ae.fusion_layer.weight.t()))
+                fus_b.append(copy.deepcopy(ae.fusion_layer.bias))
+            self.fusion_layer_weights = nn.Parameter(
+                torch.stack(fus_W, dim=0), requires_grad=False)  # (N, T*D, F)
+            self.fusion_layer_bias = nn.Parameter(
+                torch.stack(fus_b, dim=0), requires_grad=False)   # (N, F)
+
+        if not self.use_bottleneck:
+            # 1-layer (AutoEncoderSmall): bare Linear encoder/decoder
+            enc_W, enc_b, dec_W, dec_b = [], [], [], []
+            for ae in autoencoders:
+                enc_W.append(copy.deepcopy(ae.encoder.weight.t()))
+                enc_b.append(copy.deepcopy(ae.encoder.bias))
+                dec_W.append(copy.deepcopy(ae.decoder.weight.t()))
+                dec_b.append(copy.deepcopy(ae.decoder.bias))
+            self.encoder_weights = nn.Parameter(
+                torch.stack(enc_W, dim=0), requires_grad=False)   # (N, D, H)
+            self.encoder_bias = nn.Parameter(
+                torch.stack(enc_b, dim=0), requires_grad=False)    # (N, H)
+            self.decoder_weights = nn.Parameter(
+                torch.stack(dec_W, dim=0), requires_grad=False)   # (N, H, D)
+            self.decoder_bias = nn.Parameter(
+                torch.stack(dec_b, dim=0), requires_grad=False)    # (N, D)
+        else:
+            # 2-layer (AutoEncoder): Sequential([Linear(D,H), ReLU, Linear(H,Z)])
+            enc_W1, enc_b1, enc_W2, enc_b2 = [], [], [], []
+            dec_W1, dec_b1, dec_W2, dec_b2 = [], [], [], []
+            for ae in autoencoders:
+                enc_W1.append(copy.deepcopy(ae.encoder[0].weight.t()))  # (D, H)
+                enc_b1.append(copy.deepcopy(ae.encoder[0].bias))         # (H,)
+                enc_W2.append(copy.deepcopy(ae.encoder[2].weight.t()))  # (H, Z)
+                enc_b2.append(copy.deepcopy(ae.encoder[2].bias))         # (Z,)
+                dec_W1.append(copy.deepcopy(ae.decoder[0].weight.t()))  # (Z, H)
+                dec_b1.append(copy.deepcopy(ae.decoder[0].bias))         # (H,)
+                dec_W2.append(copy.deepcopy(ae.decoder[2].weight.t()))  # (H, D)
+                dec_b2.append(copy.deepcopy(ae.decoder[2].bias))         # (D,)
+            self.enc_W1 = nn.Parameter(torch.stack(enc_W1, dim=0), requires_grad=False)  # (N, D, H)
+            self.enc_b1 = nn.Parameter(torch.stack(enc_b1, dim=0), requires_grad=False)  # (N, H)
+            self.enc_W2 = nn.Parameter(torch.stack(enc_W2, dim=0), requires_grad=False)  # (N, H, Z)
+            self.enc_b2 = nn.Parameter(torch.stack(enc_b2, dim=0), requires_grad=False)  # (N, Z)
+            self.dec_W1 = nn.Parameter(torch.stack(dec_W1, dim=0), requires_grad=False)  # (N, Z, H)
+            self.dec_b1 = nn.Parameter(torch.stack(dec_b1, dim=0), requires_grad=False)  # (N, H)
+            self.dec_W2 = nn.Parameter(torch.stack(dec_W2, dim=0), requires_grad=False)  # (N, H, D)
+            self.dec_b2 = nn.Parameter(torch.stack(dec_b2, dim=0), requires_grad=False)  # (N, D)
+
+    def forward(self, x: Tensor) -> tuple[Tensor, list]:
+        # Normalize input to (B, T, D)
+        if x.ndim == 2:
+            expanded = x.unsqueeze(1)  # (B, D) -> (B, 1, D)
+        elif not self.config.batch_first:
+            expanded = einops.rearrange(x, "t b d ... -> b t d ...")
+        else:
+            expanded = x  # (B, T, D)
+
+        if self.feature_fusion:
+            if self.config.batch_first:
+                flat = einops.rearrange(expanded, "b t d ... -> b (t d) ...")
+            else:
+                flat = einops.rearrange(expanded, "t b d ... -> b (t d) ...")
+            input_feature = (
+                torch.einsum("bd,ndf->nbf", flat, self.fusion_layer_weights)
+                + self.fusion_layer_bias[:, None, :]
+            ).unsqueeze(2)  # (N, B, 1, F)
+            use_n_einsum = True
+        else:
+            input_feature = expanded  # (B, T, D)
+            use_n_einsum = False
+
+        if not self.use_bottleneck:
+            # 1-layer forward
+            if use_n_einsum:
+                latents = (
+                    torch.einsum("nbtd,ndh->nbth", input_feature, self.encoder_weights)
+                    + self.encoder_bias[:, None, None, :]
+                )
+            else:
+                latents = (
+                    torch.einsum("btd,ndh->nbth", input_feature, self.encoder_weights)
+                    + self.encoder_bias[:, None, None, :]
+                )
+            latents = torch.relu(latents)  # (N, B, T, H)
+            reconstructions = (
+                torch.einsum("nbth,nhd->nbtd", latents, self.decoder_weights)
+                + self.decoder_bias[:, None, None, :]
+            )  # (N, B, T, D)
+            info_latents = latents
+        else:
+            # 2-layer forward
+            if use_n_einsum:
+                l1 = (
+                    torch.einsum("nbtd,ndh->nbth", input_feature, self.enc_W1)
+                    + self.enc_b1[:, None, None, :]
+                )
+            else:
+                l1 = (
+                    torch.einsum("btd,ndh->nbth", input_feature, self.enc_W1)
+                    + self.enc_b1[:, None, None, :]
+                )
+            l1 = torch.relu(l1)  # (N, B, T, H)
+            l2 = (
+                torch.einsum("nbth,nhz->nbtz", l1, self.enc_W2)
+                + self.enc_b2[:, None, None, :]
+            )  # (N, B, T, Z)
+            r1 = (
+                torch.einsum("nbtz,nzh->nbth", l2, self.dec_W1)
+                + self.dec_b1[:, None, None, :]
+            )
+            r1 = torch.relu(r1)  # (N, B, T, H)
+            reconstructions = (
+                torch.einsum("nbth,nhd->nbtd", r1, self.dec_W2)
+                + self.dec_b2[:, None, None, :]
+            )  # (N, B, T, D)
+            info_latents = l2
+
+        reconstruction_losses = (reconstructions - input_feature).pow(2)  # (N, B, T, D)
+        mean_losses = reconstruction_losses.mean(dim=(-2, -1))  # (N, B)
+
+        info_dicts = []
+        for i, ae in enumerate(self._autoencoders):
+            info_dict = {
+                "reconstruction": reconstructions[i],
+                "loss": reconstruction_losses[i],
+                "latent": info_latents[i],
+            }
+            if ae.require_z_score:
+                info_dict["z_score"] = ae.compute_z_score(mean_losses[i])
+            info_dict["running_mean"] = ae.running_mean
+            info_dict["running_std"] = ae.running_std
+            info_dict["num_batches_tracked"] = ae.num_batches_tracked
+            info_dicts.append(info_dict)
+
+        return mean_losses, info_dicts
+
+
+def create_batched_discriminator(discriminators) -> Optional[nn.Module]:
+    """Return a batched discriminator if all discriminators are the same batchable type.
+
+    Returns None if types are mixed or the discriminator type has no batched implementation
+    (e.g. VAE, RND, LoRA AutoEncoder) -- callers should fall back to sequential execution.
+    """
+    if not discriminators:
+        return None
+    disc_list = list(discriminators)
+    if not all(type(d) is type(disc_list[0]) for d in disc_list):
+        return None  # mixed types: sequential fallback
+
+    first = disc_list[0]
+    if isinstance(first, AutoEncoder):
+        if getattr(first, 'use_lora', False):
+            return None  # LoRA weights are not batchable
+        return BatchedAutoEncoder(first.config, disc_list)
+    if isinstance(first, AutoEncoderSmall):
+        return BatchedAutoEncoder(first.config, disc_list)
+    return None  # VAE, RND, unknown: no batched version
+
 
 @DiscriminatorConfig.register_subclass('vae')
 @dataclass

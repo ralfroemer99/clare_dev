@@ -13,7 +13,7 @@
 # limitations under the License.
 *.tar.gz
 # custom modules
-peft_lsy
+# peft_lsy
 hf_cache
 # Dev scripts
 .dev
