@@ -1,10 +1,8 @@
 """
-CLARE Inference Computation Analysis
-=====================================
-Measures for the base policy and CLARE after each of tasks 0–9 (Libero Goal, seed 42):
-  - Inference time: total, discriminator-only, policy-only (total − disc)
-  - GPU memory footprint
-  - Disk storage (base model + adapter)
+CLARE Inference Computation Analysis - Libero-40
+=================================================
+Measures for the base policy and CLARE at stages 1, 5, 10, 15, …, 40
+across the 40-task Libero-40 sequence (libero_10 → goal → spatial → object, seed 0).
 
 Usage:
     conda run -n clare python data_scripts/computation_analysis.py
@@ -12,7 +10,6 @@ Usage:
 """
 
 import argparse
-import json
 from pathlib import Path
 
 import numpy as np
@@ -23,41 +20,81 @@ import matplotlib.pyplot as plt
 # Configuration
 # ─────────────────────────────────────────────────────────────────────────────
 
-PRETRAIN_PATH = Path("/home/ralf_roemer/projects/clare/outputs/dit_flow_mt_libero_90_pretrain_new")
-OUTPUTS_DIR   = Path("/home/ralf_roemer/projects/clare_dev/outputs/libero_goal/clare")
-RUN_PREFIX    = "dit_flow_mt_cl_seed_42_libero_goal"
-TASK_SUFFIX   = "encoder_mlp_adapter_threshold_1_0"
-N_TASKS       = 10
-DEVICE        = "cuda"
+PRETRAIN_PATH     = Path("/home/ralf_roemer/projects/clare/outputs/dit_flow_mt_libero_90_pretrain_new")
+OUTPUTS_DIR       = Path("/home/ralf_roemer/projects/clare_dev/outputs/libero_40")
+RUN_PREFIX        = "dit_flow_mt_cl_seed_0_libero_40"
+TASK_SUFFIX       = "encoder_mlp_adapter_threshold_1_0"
+DATASET_CACHE_DIR = Path.home() / ".cache/huggingface/lerobot/continuallearning"
 
-# Timing
-N_WARMUP = 10
-N_REPS   = 50
+LIBERO_40_SUITES = ["libero_10", "libero_goal", "libero_spatial", "libero_object"]
+N_TASKS          = 40
+TASKS_PER_SUITE  = 10
 
-# Batch shape (from train_config.json)
-BATCH_SIZE   = 1
+# Global task indices to measure (0-indexed): stages 1, 5, 10, 15, 20, 25, 30, 35, 40
+DISPLAY_STAGES = [0, 4, 9, 14, 19, 24, 29, 34, 39]
+
+DEVICE = "cuda"
+N_WARMUP = 5
+N_REPS   = 20
+
+BATCH_SIZE          = 1
 IMG_C, IMG_H, IMG_W = 3, 256, 256
-STATE_DIM    = 8
+STATE_DIM           = 8
+DISC_FEATURE_DIM    = 2576
 
-# Discriminator input dimension (from adapter_config.json → feature_dim)
-DISC_FEATURE_DIM = 2576
+DATASET_EPISODES_TOTAL = 50
+DATASET_EPISODES_ER    = 5
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Path helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
-def task_dir(task_id: int) -> Path:
-    return OUTPUTS_DIR / f"{RUN_PREFIX}_task_{task_id}_{TASK_SUFFIX}"
+def global_to_suite_local(global_id: int) -> tuple[str, int]:
+    suite = LIBERO_40_SUITES[global_id // TASKS_PER_SUITE]
+    local = global_id % TASKS_PER_SUITE
+    return suite, local
 
-def adapter_path(task_id: int) -> Path:
-    return task_dir(task_id) / "checkpoints" / "last" / "adapter"
 
-def pretrained_path(task_id: int) -> Path:
-    return task_dir(task_id) / "checkpoints" / "last" / "pretrained_model"
+def task_dir(global_id: int) -> Path:
+    suite, local = global_to_suite_local(global_id)
+    return OUTPUTS_DIR / f"{RUN_PREFIX}_{suite}_task_{local}_{TASK_SUFFIX}"
+
+
+def adapter_path(global_id: int) -> Path:
+    return task_dir(global_id) / "checkpoints" / "last" / "adapter"
+
 
 def dir_size_mb(path: Path) -> float:
     return sum(f.stat().st_size for f in path.rglob("*") if f.is_file()) / 1e6
+
+
+def dataset_sizes_mb_40() -> list[float]:
+    """Per-task dataset sizes in MB scaled to DATASET_EPISODES_ER episodes."""
+    scale = DATASET_EPISODES_ER / DATASET_EPISODES_TOTAL
+    sizes = []
+    for suite in LIBERO_40_SUITES:
+        for i in range(TASKS_PER_SUITE):
+            p = DATASET_CACHE_DIR / f"{suite}_image_task_{i}"
+            mb = sum(f.stat().st_size for f in p.rglob("*") if f.is_file()) / 1e6 if p.exists() else 0.0
+            sizes.append(mb * scale)
+    return sizes
+
+
+def adapter_split_mb(adapter_dir: Path) -> tuple[float, float]:
+    """Return (lora_mb, disc_mb) by inspecting adapter_model.safetensors tensor names."""
+    from safetensors import safe_open
+    sf = adapter_dir / "adapter_model.safetensors"
+    lora_bytes = disc_bytes = 0
+    with safe_open(str(sf), framework="pt") as f:
+        for k in f.keys():
+            t = f.get_tensor(k)
+            nb = t.numel() * t.element_size()
+            if "discriminator" in k:
+                disc_bytes += nb
+            else:
+                lora_bytes += nb
+    return lora_bytes / 1e6, disc_bytes / 1e6
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -66,73 +103,49 @@ def dir_size_mb(path: Path) -> float:
 
 def load_base_policy():
     from lerobot.policies.dit_flow_mt.modeling_dit_flow_mt import DiTFlowMTPolicy
-    policy = DiTFlowMTPolicy.from_pretrained(PRETRAIN_PATH)
-    return policy.to(DEVICE).eval()
+    return DiTFlowMTPolicy.from_pretrained(PRETRAIN_PATH).to(DEVICE).eval()
 
 
 class PeftWrapperPolicy(torch.nn.Module):
-    """Thin wrapper so PEFT keys match the checkpoint prefix (base_model.model.policy.*)."""
     def __init__(self, policy):
         super().__init__()
         self.policy = policy
 
 
-def load_clare_policy(task_id: int):
+def load_clare_policy(global_id: int):
     from lerobot.policies.dit_flow_mt.modeling_dit_flow_mt import DiTFlowMTPolicy
     from peft import PeftModel
-    # Use the original pretrain checkpoint (base weights only) for all tasks
-    # to avoid loading accumulated adapter/disc weights from per-task checkpoints.
     policy = DiTFlowMTPolicy.from_pretrained(PRETRAIN_PATH)
     wrapper = PeftWrapperPolicy(policy=policy)
-    peft_policy = PeftModel.from_pretrained(wrapper, adapter_path(task_id))
-    return peft_policy.to(DEVICE).eval()
+    return PeftModel.from_pretrained(wrapper, adapter_path(global_id)).to(DEVICE).eval()
 
 
 def get_inner_policy(peft_model):
-    """Unwrap PeftModel → PeftWrapperPolicy → DiTFlowMTPolicy."""
     return peft_model.base_model.model.policy
 
 
 def get_clare_modules(peft_model):
-    """Return all CLARELayer instances (one per adapted linear layer)."""
     from peft.tuners.clare.layer import CLARELayer
     return [m for m in peft_model.modules() if isinstance(m, CLARELayer)]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Dummy batch
+# Timing / memory helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
 def make_dummy_batch() -> dict:
-    """
-    Construct a single-step observation batch for select_action().
-    Keys match the policy's image_features + state feature.
-    Shape: (B, C, H, W) for images, (B, state_dim) for state.
-    """
     return {
-        "observation.images.image": torch.zeros(
-            BATCH_SIZE, IMG_C, IMG_H, IMG_W, device=DEVICE,
-        ),
-        "observation.images.wrist_image": torch.zeros(
-            BATCH_SIZE, IMG_C, IMG_H, IMG_W, device=DEVICE,
-        ),
-        "observation.state": torch.zeros(
-            BATCH_SIZE, STATE_DIM, device=DEVICE,
-        ),
+        "observation.images.image":       torch.zeros(BATCH_SIZE, IMG_C, IMG_H, IMG_W, device=DEVICE),
+        "observation.images.wrist_image": torch.zeros(BATCH_SIZE, IMG_C, IMG_H, IMG_W, device=DEVICE),
+        "observation.state":              torch.zeros(BATCH_SIZE, STATE_DIM, device=DEVICE),
         "task": ["pick and place the object"] * BATCH_SIZE,
     }
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# GPU timing via CUDA events
-# ─────────────────────────────────────────────────────────────────────────────
-
-def cuda_time_ms(fn, n_warmup: int = N_WARMUP, n_reps: int = N_REPS) -> float:
-    """Time a callable with CUDA events, return mean ms (warmup excluded)."""
+def cuda_time_ms(fn, n_warmup=N_WARMUP, n_reps=N_REPS) -> tuple[float, float]:
     for _ in range(n_warmup):
         fn()
     torch.cuda.synchronize()
-
     start = torch.cuda.Event(enable_timing=True)
     end   = torch.cuda.Event(enable_timing=True)
     times = []
@@ -142,14 +155,10 @@ def cuda_time_ms(fn, n_warmup: int = N_WARMUP, n_reps: int = N_REPS) -> float:
         end.record()
         torch.cuda.synchronize()
         times.append(start.elapsed_time(end))
-    return float(np.mean(times))
+    return float(np.mean(times)), float(np.std(times))
 
 
-def time_discriminators_ms(clare_modules: list) -> float:
-    """
-    Time all discriminators across all CLARE adapter modules.
-    Uses a dummy tensor at the discriminator's feature dimension.
-    """
+def time_discriminators_ms(clare_modules) -> tuple[float, float]:
     x = torch.randn(BATCH_SIZE, DISC_FEATURE_DIM, device=DEVICE)
 
     @torch.no_grad()
@@ -161,23 +170,50 @@ def time_discriminators_ms(clare_modules: list) -> float:
     return cuda_time_ms(run)
 
 
-def time_select_action_ms(inner_policy, batch: dict) -> float:
-    """Time a full select_action call (queue handling + flow matching ODE).
-
-    We reset the policy each call so predict_action_chunk is always triggered
-    (action queue is empty after reset).
+def time_select_action_and_adapters_ms(
+    clare_modules, inner_policy, batch
+) -> tuple[float, float, float]:
     """
-    @torch.no_grad()
-    def run():
-        inner_policy.reset()
-        inner_policy.select_action(batch)
+    Time select_action and adapter forward passes in a single measurement loop.
+    Returns (total_mean_ms, total_std_ms, adapters_mean_ms).
+    """
+    total_times   = []
+    adapter_times = []
 
-    return cuda_time_ms(run)
+    start = torch.cuda.Event(enable_timing=True)
+    end   = torch.cuda.Event(enable_timing=True)
 
+    for rep in range(N_WARMUP + N_REPS):
+        hooks  = []
+        fired = []
+        for mod in clare_modules:
+            for adapter in mod.clare_func_adapters[mod.adapter_name]:
+                s = torch.cuda.Event(enable_timing=True)
+                e = torch.cuda.Event(enable_timing=True)
+                def pre_hook(m, args, s=s):
+                    s.record()
+                def post_hook(m, args, output, s=s, e=e):
+                    e.record()
+                    fired.append((s, e))
+                hooks.append(adapter.register_forward_pre_hook(pre_hook))
+                hooks.append(adapter.register_forward_hook(post_hook))
 
-# ─────────────────────────────────────────────────────────────────────────────
-# GPU memory
-# ─────────────────────────────────────────────────────────────────────────────
+        start.record()
+        with torch.no_grad():
+            inner_policy.reset()
+            inner_policy.select_action(batch)
+        end.record()
+        torch.cuda.synchronize()
+
+        for h in hooks:
+            h.remove()
+
+        if rep >= N_WARMUP:
+            total_times.append(start.elapsed_time(end))
+            adapter_times.append(sum(s.elapsed_time(e) for s, e in fired))
+
+    return float(np.mean(total_times)), float(np.std(total_times)), float(np.mean(adapter_times))
+
 
 def gpu_memory_mb() -> float:
     torch.cuda.synchronize()
@@ -190,74 +226,77 @@ def gpu_memory_mb() -> float:
 
 def run_analysis() -> dict:
     results = {
-        "labels":           [],
-        "total_ms":         [],
-        "policy_ms":        [],
-        "discriminator_ms": [],
-        "gpu_mb":           [],
-        "model_mb":         [],
-        "adapter_mb":       [],
+        "stage_ids":           [],   # global 0-indexed stage
+        "labels":              [],   # display label (1, 5, 10, …)
+        "total_ms":            [],
+        "total_std":           [],
+        "policy_ms":           [],
+        "adapters_ms":         [],
+        "disc_ms":             [],
+        "backbone_vram_mb":    [],
+        "adapters_vram_mb":    [],
+        "disc_vram_mb":        [],
+        "lora_disk_mb":        [],
+        "disc_disk_mb":        [],
     }
 
     batch = make_dummy_batch()
 
-    # ── Base policy (no adapter, no discriminators) ──────────────────────────
-    print("=== Base policy ===")
+    # ── Measure backbone VRAM once ───────────────────────────────────────────
     torch.cuda.empty_cache()
     torch.cuda.reset_peak_memory_stats()
-
-    policy  = load_base_policy()
-    gpu_mb  = gpu_memory_mb()
-    total_ms = time_select_action_ms(policy, batch)
-
+    base_policy = load_base_policy()
+    backbone_vram = gpu_memory_mb()
     base_model_mb = dir_size_mb(PRETRAIN_PATH)
-    print(f"  total={total_ms:.1f} ms | GPU={gpu_mb:.0f} MB | model={base_model_mb:.0f} MB")
-
-    results["labels"].append("Base")
-    results["total_ms"].append(total_ms)
-    results["policy_ms"].append(total_ms)
-    results["discriminator_ms"].append(0.0)
-    results["gpu_mb"].append(gpu_mb)
-    results["model_mb"].append(base_model_mb)
-    results["adapter_mb"].append(0.0)
-
-    del policy
+    print(f"Base policy: GPU={backbone_vram:.0f} MB | model={base_model_mb:.0f} MB")
+    del base_policy
     torch.cuda.empty_cache()
 
-    # ── CLARE: one stage per task ─────────────────────────────────────────────
-    for task_id in range(N_TASKS):
-        print(f"=== CLARE task {task_id} ===")
+    # ── CLARE stages ─────────────────────────────────────────────────────────
+    for global_id in DISPLAY_STAGES:
+        label = str(global_id + 1)
+        adp = adapter_path(global_id)
+        if not adp.exists():
+            print(f"  SKIP stage {global_id + 1}: adapter not found at {adp}")
+            continue
+
+        print(f"=== CLARE stage {global_id + 1} (global task {global_id}) ===")
         torch.cuda.empty_cache()
         torch.cuda.reset_peak_memory_stats()
 
-        peft_model   = load_clare_policy(task_id)
+        peft_model   = load_clare_policy(global_id)
         inner_policy = get_inner_policy(peft_model)
         clare_mods   = get_clare_modules(peft_model)
-        n_disc       = sum(
-            len(m.clare_discriminators[m.adapter_name]) for m in clare_mods
-        )
 
-        gpu_mb   = gpu_memory_mb()
-        disc_ms  = time_discriminators_ms(clare_mods)
-        total_ms = time_select_action_ms(inner_policy, batch)
-        # Policy-only = total minus discriminator overhead
-        policy_ms = max(total_ms - disc_ms, 0.0)
+        total_vram = gpu_memory_mb()
+        disc_ms, _                          = time_discriminators_ms(clare_mods)
+        total_ms, total_std, adapters_ms    = time_select_action_and_adapters_ms(clare_mods, inner_policy, batch)
+        policy_ms = max(total_ms - disc_ms - adapters_ms, 0.0)
 
-        adp_mb = dir_size_mb(adapter_path(task_id))
+        lora_mb, disc_disk = adapter_split_mb(adp)
+        # Split VRAM overhead proportional to disk size
+        overhead_vram = max(total_vram - backbone_vram, 0.0)
+        total_disk = lora_mb + disc_disk
+        adapters_vram = overhead_vram * (lora_mb / total_disk) if total_disk > 0 else 0.0
+        disc_vram     = overhead_vram * (disc_disk / total_disk) if total_disk > 0 else 0.0
 
         print(
-            f"  n_disc={n_disc} | total={total_ms:.1f} ms "
-            f"(disc={disc_ms:.2f} ms, policy={policy_ms:.1f} ms) | "
-            f"GPU={gpu_mb:.0f} MB | model={base_model_mb:.0f} MB, adapter={adp_mb:.0f} MB"
+            f"  total={total_ms:.1f}±{total_std:.1f} ms (disc={disc_ms:.2f} ms, policy={policy_ms:.1f} ms) | "
+            f"GPU={total_vram:.0f} MB | lora={lora_mb:.0f} MB, disc={disc_disk:.0f} MB"
         )
 
-        results["labels"].append(f"T{task_id}")
+        results["stage_ids"].append(global_id)
+        results["labels"].append(label)
         results["total_ms"].append(total_ms)
+        results["total_std"].append(total_std)
         results["policy_ms"].append(policy_ms)
-        results["discriminator_ms"].append(disc_ms)
-        results["gpu_mb"].append(gpu_mb)
-        results["model_mb"].append(base_model_mb)
-        results["adapter_mb"].append(adp_mb)
+        results["adapters_ms"].append(adapters_ms)
+        results["disc_ms"].append(disc_ms)
+        results["backbone_vram_mb"].append(backbone_vram)
+        results["adapters_vram_mb"].append(adapters_vram)
+        results["disc_vram_mb"].append(disc_vram)
+        results["lora_disk_mb"].append(lora_mb)
+        results["disc_disk_mb"].append(disc_disk)
 
         del peft_model, inner_policy
         torch.cuda.empty_cache()
@@ -270,60 +309,90 @@ def run_analysis() -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def plot_results(results: dict, out_path: str) -> None:
-    labels = results["labels"]
-    xs     = np.arange(len(labels))
+    labels   = results["labels"]
+    xs       = np.arange(len(labels))
 
-    policy_ms = np.array(results["policy_ms"])
-    disc_ms   = np.array(results["discriminator_ms"])
-    model_mb  = np.array(results["model_mb"])
-    adapter_mb = np.array(results["adapter_mb"])
-    gpu_mb    = np.array(results["gpu_mb"])
+    policy_ms      = np.array(results["policy_ms"])
+    disc_ms        = np.array(results["disc_ms"])
+    total_std      = np.array(results["total_std"])
+    backbone_vram  = np.array(results["backbone_vram_mb"])
+    adapters_vram  = np.array(results["adapters_vram_mb"])
+    disc_vram      = np.array(results["disc_vram_mb"])
+    lora_disk      = np.array(results["lora_disk_mb"])
+    disc_disk      = np.array(results["disc_disk_mb"])
 
-    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    fig.suptitle(
-        "CLARE Inference Cost vs. Number of Tasks (Libero Goal, Seed 42)",
-        fontsize=13, fontweight="bold",
-    )
+    FS = 20
+    plt.rcParams.update({
+        "font.size":       FS,
+        "axes.titlesize":  FS + 4,
+        "axes.labelsize":  FS + 2,
+        "xtick.labelsize": FS + 2,
+        "ytick.labelsize": FS + 2,
+        "legend.fontsize": FS,
+    })
 
-    # ── Inference time (stacked bar) ─────────────────────────────────────────
+    fig, axes = plt.subplots(1, 3, figsize=(15, 6))
+
+    # ── Plot 1: Inference time ────────────────────────────────────────────────
     ax = axes[0]
-    ax.bar(xs, policy_ms, label="Policy (DiT + ODE)", color="steelblue")
-    ax.bar(xs, disc_ms, bottom=policy_ms, label="Discriminators", color="coral")
+    adapters_ms    = np.array(results["adapters_ms"])
+    ax.bar(xs, policy_ms, label="Base Policy", color="steelblue")
+    ax.bar(xs, adapters_ms, bottom=policy_ms, label="Adapters", color="mediumseagreen")
+    ax.bar(xs, disc_ms, bottom=policy_ms + adapters_ms, label="Discriminators", color="coral")
+    ax.errorbar(xs, policy_ms + adapters_ms + disc_ms, yerr=total_std,
+                fmt="none", color="black", capsize=4, linewidth=1.2)
+
+    for i in [0, len(labels) - 1]:
+        ax.text(xs[i], policy_ms[i] + adapters_ms[i] + disc_ms[i] + 0.5,
+                f"{disc_ms[i]:.2f}", ha="center", va="bottom", fontsize=FS - 2, color="coral")
+
     ax.set_xticks(xs)
     ax.set_xticklabels(labels)
     ax.set_xlabel("Stage")
-    ax.set_ylabel("Inference time (ms)")
+    ax.set_ylabel("Inference time [ms]")
     ax.set_title("Inference Time")
-    ax.legend(loc="upper left")
-    # Annotate discriminator time for T0 and T9
-    for i in [1, len(labels) - 1]:
-        ax.text(xs[i], policy_ms[i] + disc_ms[i] + 0.5,
-                f"{disc_ms[i]:.2f}", ha="center", va="bottom", fontsize=8, color="coral")
+    ax.legend(loc="lower left", framealpha=1, fontsize=FS - 2)
 
-    # ── Storage (stacked bar) ────────────────────────────────────────────────
+    # ── Plot 2: Disk storage ──────────────────────────────────────────────────
     ax = axes[1]
-    ax.bar(xs, model_mb, label="Base model", color="steelblue")
-    ax.bar(xs, adapter_mb, bottom=model_mb, label="Adapter + discriminators", color="coral")
-    ax.set_xticks(xs)
-    ax.set_xticklabels(labels)
-    ax.set_xlabel("Stage")
-    ax.set_ylabel("Disk size (MB)")
-    ax.set_title("Storage")
-    ax.legend(loc="upper left")
-    # Annotate adapter size at T9
-    i = len(labels) - 1
-    ax.text(xs[i], model_mb[i] + adapter_mb[i] + 2,
-            f"{adapter_mb[i]:.0f} MB", ha="center", va="bottom", fontsize=8, color="coral")
+    base_model_mb = dir_size_mb(PRETRAIN_PATH)
+    ax.bar(xs, np.full(len(xs), base_model_mb / 1e3), label="Base Policy", color="steelblue")
+    ax.bar(xs, lora_disk / 1e3, bottom=base_model_mb / 1e3,
+           label="Adapters", color="mediumseagreen")
+    ax.bar(xs, disc_disk / 1e3, bottom=(base_model_mb + lora_disk) / 1e3,
+           label="Discriminators", color="coral")
 
-    # ── GPU memory (line) ────────────────────────────────────────────────────
-    ax = axes[2]
-    ax.plot(xs, gpu_mb, marker="o", color="steelblue", linewidth=2)
     ax.set_xticks(xs)
     ax.set_xticklabels(labels)
     ax.set_xlabel("Stage")
-    ax.set_ylabel("GPU memory allocated (MB)")
+    ax.set_yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4])
+    ax.set_ylabel("VRAM [GB]")
     ax.set_title("GPU Memory")
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda v, _: f"{v:.0f}"))
+    ax.legend(loc="lower left", framealpha=1, fontsize=FS - 2)
+
+    # ── Plot 3: Cumulative disk usage (line plot) ─────────────────────────────
+    ax = axes[2]
+
+    # Adapter+disc cumulative at available stages
+    stage_ids     = np.array(results["stage_ids"])
+    xs_model      = stage_ids + 1          # display as 1-indexed
+    cumul_model_gb = (lora_disk + disc_disk) / 1e3
+    ax.plot(xs_model, cumul_model_gb, marker="o", color="mediumpurple",
+            linewidth=2, label="Adapters + Discrim.")
+
+    # Dataset cumulative (all 40 tasks on x = 1..40)
+    all_dataset_mb = dataset_sizes_mb_40()
+    xs_data = np.arange(1, N_TASKS + 1)
+    cumul_data_gb = np.cumsum(all_dataset_mb) / 1e3
+    ax.plot(xs_data, cumul_data_gb, marker="s", color="goldenrod",
+            linewidth=2, label="Datasets")
+
+    ax.set_xticks([1] + list(range(5, N_TASKS + 1, 5)))
+    ax.set_xlim(0, N_TASKS + 1)
+    ax.set_xlabel("Stage")
+    ax.set_ylabel("Cum. disk space [GB]")
+    ax.set_title("Additional Disk Usage")
+    ax.legend(loc="upper left", bbox_to_anchor=(0, 0.85), framealpha=1, fontsize=FS - 2)
 
     plt.tight_layout()
     plt.savefig(out_path, dpi=150, bbox_inches="tight")
@@ -337,8 +406,8 @@ def plot_results(results: dict, out_path: str) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--out", default="data_scripts/computation_analysis.png",
-        help="Output path for the plot (default: data_scripts/computation_analysis.png)",
+        "--out", default="figs/computation_analysis.png",
+        help="Output path for the plot",
     )
     args = parser.parse_args()
 

@@ -28,6 +28,8 @@ import re
 from pathlib import Path
 
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 
 
 def load_summary(run_dir: Path) -> dict:
@@ -39,27 +41,58 @@ def load_summary(run_dir: Path) -> dict:
     return json.loads(sorted(matches)[-1].read_text())
 
 
-def fetch_performance_matrix(outputs_dir, run_prefix, suite, n_tasks, verbose=False):
+def load_eval_rerun(run_dir: Path) -> dict:
+    """Load eval_rerun/multitask_eval_info.json and return a flat dict keyed by task name."""
+    p = run_dir / "eval_rerun" / "multitask_eval_info.json"
+    if not p.exists():
+        raise FileNotFoundError(f"No eval_rerun/multitask_eval_info.json found in {run_dir}")
+    data = json.loads(p.read_text())
+    return {task: v["avg_sum_reward"] for task, v in data["per_task"].items()}
+
+
+def fetch_performance_matrix(outputs_dir, run_prefix, suite, n_tasks, verbose=False,
+                             suites=None, tasks_per_suite=10, global_task_numbering=False,
+                             use_eval_rerun=False):
     """
     Returns R: numpy array of shape (n_tasks, n_tasks) where
         R[j][i] = avg_sum_reward on task i after training through stage j.
     Entries where j < i are NaN (task i not yet seen at that stage).
+
+    For multi-suite sequences (e.g. Libero-40), pass suites=['libero_10','libero_goal',...]
+    and tasks_per_suite=10. Global stage g maps to suite g//tasks_per_suite, local task
+    g%tasks_per_suite. Run dirs are expected as {run_prefix}_{suite_name}_task_{local}_*.
     """
     outputs_dir = Path(outputs_dir)
 
-    # WandB key pattern: eval/avg_sum_reward_Libero_Spatial_Task_0
-    suite_pascal = "_".join(w.capitalize() for w in suite.split("_"))  # libero_spatial -> Libero_Spatial
-    task_key_template = f"eval/avg_sum_reward_{suite_pascal}_Task_{{i}}"
+    multi_suite = suites is not None and len(suites) > 1
+
+    def suite_pascal(s):
+        return "_".join(w.capitalize() for w in s.split("_"))
+
+    def task_key(global_task):
+        if multi_suite:
+            s = suites[global_task // tasks_per_suite]
+            local = global_task % tasks_per_suite
+        else:
+            s = suite
+            local = global_task
+        return f"eval/avg_sum_reward_{suite_pascal(s)}_Task_{local}"
+
+    def stage_dir_pattern(global_stage):
+        if multi_suite and not global_task_numbering:
+            s = suites[global_stage // tasks_per_suite]
+            local = global_stage % tasks_per_suite
+            return f"{run_prefix}_{s}_task_{local}_*", f"{run_prefix}_{s}_task_{local}"
+        else:
+            return f"{run_prefix}_task_{global_stage}_*", f"{run_prefix}_task_{global_stage}"
 
     R = np.full((n_tasks, n_tasks), np.nan)
 
     for stage in range(n_tasks):
-        # Find matching output directory for this stage
-        pattern = f"{run_prefix}_task_{stage}_*"
+        pattern, exact_name = stage_dir_pattern(stage)
         candidates = sorted(outputs_dir.glob(pattern))
         if not candidates:
-            # Also try exact match (no suffix after task number)
-            exact = outputs_dir / f"{run_prefix}_task_{stage}"
+            exact = outputs_dir / exact_name
             if exact.is_dir():
                 candidates = [exact]
         if not candidates:
@@ -67,18 +100,32 @@ def fetch_performance_matrix(outputs_dir, run_prefix, suite, n_tasks, verbose=Fa
             continue
         run_dir = candidates[0]
 
-        try:
-            summary = load_summary(run_dir)
-        except FileNotFoundError as e:
-            print(f"  WARNING: {e} — stage {stage} skipped")
-            continue
-
-        for i in range(stage + 1):
-            key = task_key_template.format(i=i)
-            if key in summary:
-                R[stage][i] = summary[key]
-            else:
-                print(f"  WARNING: key '{key}' not found in {run_dir.name}")
+        if use_eval_rerun:
+            try:
+                eval_data = load_eval_rerun(run_dir)
+            except FileNotFoundError as e:
+                print(f"  WARNING: {e} — stage {stage} skipped")
+                continue
+            for i in range(stage + 1):
+                wk = task_key(i)
+                # task name is the part after "eval/avg_sum_reward_"
+                task_name = wk[len("eval/avg_sum_reward_"):]
+                if task_name in eval_data:
+                    R[stage][i] = eval_data[task_name]
+                else:
+                    print(f"  WARNING: key '{task_name}' not found in eval_rerun for {run_dir.name}")
+        else:
+            try:
+                summary = load_summary(run_dir)
+            except FileNotFoundError as e:
+                print(f"  WARNING: {e} — stage {stage} skipped")
+                continue
+            for i in range(stage + 1):
+                key = task_key(i)
+                if key in summary:
+                    R[stage][i] = summary[key]
+                else:
+                    print(f"  WARNING: key '{key}' not found in {run_dir.name}")
 
     if verbose:
         print(f"\n  Performance matrix R[stage][task] for '{run_prefix}':")
@@ -149,6 +196,45 @@ def compute_cl_metrics(R, n_tasks=None):
     return {"FWT": fwt, "AUC": auc, "NBT": nbt, "diag": diag, "final": final}
 
 
+def plot_matrix(R, n_tasks, title, out_path, multi_suites=None, tasks_per_suite=10):
+    """Plot the lower-left triangle of R as a heatmap."""
+    # Mask upper triangle (task not yet seen)
+    R_plot = R[:n_tasks, :n_tasks].copy()
+    mask = np.triu(np.ones_like(R_plot, dtype=bool), k=1)
+    R_masked = np.ma.array(R_plot, mask=mask)
+
+    fig_size = max(8, n_tasks * 0.35)
+    fig, ax = plt.subplots(figsize=(fig_size, fig_size * 0.85))
+
+    cmap = plt.cm.RdYlGn.copy()
+    cmap.set_bad(color="lightgrey")
+    im = ax.imshow(R_masked, vmin=0, vmax=1, cmap=cmap, aspect="auto", origin="upper")
+
+    plt.colorbar(im, ax=ax, fraction=0.03, pad=0.02, label="Success rate")
+
+    # Suite boundary lines
+    if multi_suites and len(multi_suites) > 1:
+        for k in range(1, len(multi_suites)):
+            boundary = k * tasks_per_suite - 0.5
+            ax.axhline(boundary, color="black", linewidth=1.5, linestyle="--", alpha=0.6)
+            ax.axvline(boundary, color="black", linewidth=1.5, linestyle="--", alpha=0.6)
+
+    tick_step = max(1, n_tasks // 20)
+    ticks = list(range(0, n_tasks, tick_step))
+    ax.set_xticks(ticks)
+    ax.set_yticks(ticks)
+    ax.set_xticklabels([str(t) for t in ticks], fontsize=9)
+    ax.set_yticklabels([str(t) for t in ticks], fontsize=9)
+    ax.set_xlabel("Task", fontsize=12)
+    ax.set_ylabel("Stage", fontsize=12)
+    ax.set_title(title, fontsize=11)
+
+    plt.tight_layout()
+    plt.savefig(out_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  R-matrix heatmap saved → {out_path}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--outputs_dir", default="./outputs")
@@ -158,21 +244,42 @@ def main():
     parser.add_argument("--suite",       required=True,
                         help="Comma-separated suite names matching run_prefix order")
     parser.add_argument("--n_tasks",     type=int, default=10)
+    parser.add_argument("--suites",      default=None,
+                        help="Comma-separated list of suite names for multi-suite sequences, "
+                             "e.g. 'libero_10,libero_goal,libero_spatial,libero_object'. "
+                             "Overrides --suite for directory/key resolution.")
+    parser.add_argument("--tasks_per_suite", type=int, default=10,
+                        help="Number of tasks per suite in multi-suite mode (default: 10)")
+    parser.add_argument("--global_task_numbering", action="store_true",
+                        help="Use global task index (0..N-1) for directory lookup even in multi-suite mode. "
+                             "Use this when dirs are named task_0..task_39 but keys are still suite-specific.")
     parser.add_argument("--seeds",       default=None,
                         help="Comma-separated list of seeds, e.g. '0,1,42'. "
                              "If set, run_prefix must contain {seed} placeholder. "
                              "Reports mean ± std across seeds.")
     parser.add_argument("--verbose",     action="store_true")
+    parser.add_argument("--plot",        default=None,
+                        help="If set, save a heatmap of R to this path (e.g. figs/r_matrix.png)")
     args = parser.parse_args()
 
     prefixes = [p.strip() for p in args.run_prefix.split(",")]
     suites   = [s.strip() for s in args.suite.split(",")]
     assert len(prefixes) == len(suites), "--run_prefix and --suite must have the same number of entries"
 
+    multi_suites = [s.strip() for s in args.suites.split(",")] if args.suites else None
+
     for prefix_template, suite in zip(prefixes, suites):
         print(f"\n{'='*60}")
         print(f"Experiment: {prefix_template}  |  suite: {suite}")
         print(f"{'='*60}")
+
+        def _fetch(prefix):
+            return fetch_performance_matrix(
+                args.outputs_dir, prefix, suite, args.n_tasks,
+                verbose=args.verbose,
+                suites=multi_suites, tasks_per_suite=args.tasks_per_suite,
+                global_task_numbering=args.global_task_numbering,
+            )
 
         if args.seeds is not None:
             seeds = [s.strip() for s in args.seeds.split(",")]
@@ -180,9 +287,9 @@ def main():
             for seed in seeds:
                 prefix = prefix_template.replace("{seed}", seed)
                 print(f"\n  Seed {seed}: {prefix}")
-                R = fetch_performance_matrix(args.outputs_dir, prefix, suite, args.n_tasks, verbose=args.verbose)
+                R = _fetch(prefix)
                 m = compute_cl_metrics(R, n_tasks=args.n_tasks)
-                print(f"    FWT={m['FWT']*100:.2f}%  AUC={m['AUC']*100:.2f}%  NBT={m['NBT']*100:.2f}%")
+                print(f"    FWT={m['FWT']*100:.1f}%  AUC={m['AUC']*100:.1f}%  NBT={m['NBT']*100:.1f}%")
                 for k in all_metrics:
                     all_metrics[k].append(m[k])
 
@@ -190,13 +297,18 @@ def main():
             for k in ["AUC", "FWT", "NBT"]:
                 vals = np.array(all_metrics[k])
                 mean, std = np.nanmean(vals), np.nanstd(vals)
-                print(f"  {k:4s}: {mean*100:.2f}% ± {std*100:.2f}%")
+                print(f"  {k:4s}: {mean*100:.1f}% ± {std*100:.1f}%")
         else:
-            R = fetch_performance_matrix(args.outputs_dir, prefix_template, suite, args.n_tasks, verbose=args.verbose)
+            R = _fetch(prefix_template)
             m = compute_cl_metrics(R, n_tasks=args.n_tasks)
             print(f"\n  FWT (Forward Transfer):        {m['FWT']:.4f}  ({m['FWT']*100:.1f}%)  — avg success right after learning each task")
             print(f"  AUC (Area Under Curve):        {m['AUC']:.4f}  ({m['AUC']*100:.1f}%)  — avg success across all stages")
             print(f"  NBT (Neg. Backward Transfer):  {m['NBT']:.4f}  ({m['NBT']*100:.1f}%)  — avg forgetting (lower = better)")
+
+            if args.plot:
+                plot_matrix(R, args.n_tasks, prefix_template, args.plot,
+                            multi_suites=multi_suites,
+                            tasks_per_suite=args.tasks_per_suite)
 
         # print(f"\n  Diagonal R[i,i] — peak performance right after training each task:")
         # for i, v in enumerate(m["diag"]):
